@@ -1,0 +1,268 @@
+{
+  "_note": "Field layout of the two Baserow tables (no data). Buttons open {n8n}/webhook/carousel-automation?action=<action>&row=<row id>. The setup workflow creates all of this.",
+  "tables": {
+    "Content": [
+      {
+        "name": "Title",
+        "type": "text",
+        "primary": true
+      },
+      {
+        "name": "Status",
+        "type": "single_select",
+        "options": [
+          "New",
+          "Brainstorming…",
+          "Summary ready",
+          "Filling plan…",
+          "Plan ready",
+          "Writing text draft…",
+          "Draft text ready",
+          "Making draft images…",
+          "Style preview ready",
+          "Draft image ready",
+          "Redoing draft images…",
+          "Draft images redone",
+          "Finalising draft post…",
+          "Draft post saved",
+          "Needs attention"
+        ]
+      },
+      {
+        "name": "1 · Gather Content & Design Requirements",
+        "type": "button",
+        "action": "research",
+        "label": "▶ Brainstorm"
+      },
+      {
+        "name": "Content Research",
+        "type": "long_text"
+      },
+      {
+        "name": "Content Research Reference Links",
+        "type": "long_text"
+      },
+      {
+        "name": "Content Research Brief",
+        "type": "long_text"
+      },
+      {
+        "name": "Sources",
+        "type": "long_text"
+      },
+      {
+        "name": "3 · Post Creation Plan",
+        "type": "button",
+        "action": "slides",
+        "label": "▶ Approve → create draft text"
+      },
+      {
+        "name": "Slide size",
+        "type": "single_select",
+        "options": [
+          "4:5 (Instagram + TikTok)",
+          "9:16 (TikTok, Reels, Shorts)",
+          "Both (4:5 + 9:16)"
+        ]
+      },
+      {
+        "name": "Slide count",
+        "type": "number"
+      },
+      {
+        "name": "Niche",
+        "type": "long_text"
+      },
+      {
+        "name": "Narrative prompt",
+        "type": "long_text"
+      },
+      {
+        "name": "Format prompt",
+        "type": "long_text"
+      },
+      {
+        "name": "Image style",
+        "type": "long_text"
+      },
+      {
+        "name": "Cover reference images",
+        "type": "file"
+      },
+      {
+        "name": "Slide reference images",
+        "type": "file"
+      },
+      {
+        "name": "Reference slideshow links",
+        "type": "long_text"
+      },
+      {
+        "name": "4 · Draft Text",
+        "type": "button",
+        "action": "images",
+        "label": "▶ Approve draft text → make style preview"
+      },
+      {
+        "name": "Slides",
+        "type": "link_row",
+        "links_to": "Slides"
+      },
+      {
+        "name": "Redo images",
+        "type": "button",
+        "action": "redo",
+        "label": "↻ Redo images"
+      },
+      {
+        "name": "Post caption",
+        "type": "long_text"
+      },
+      {
+        "name": "Hashtags",
+        "type": "long_text"
+      },
+      {
+        "name": "7 · Saved Finalised Drafts",
+        "type": "formula",
+        "note": "empty, used as a section heading"
+      },
+      {
+        "name": "Drive folder",
+        "type": "url"
+      },
+      {
+        "name": "Posting log",
+        "type": "long_text"
+      },
+      {
+        "name": "Style Direction",
+        "type": "long_text"
+      },
+      {
+        "name": "Content Research Reference Files",
+        "type": "file"
+      },
+      {
+        "name": "n8n run",
+        "type": "text"
+      },
+      {
+        "name": "Cover reference use",
+        "type": "single_select",
+        "options": [
+          "Match the look",
+          "Recreate the scene (same person)"
+        ]
+      },
+      {
+        "name": "Angle",
+        "type": "long_text"
+      },
+      {
+        "name": "Text style reference",
+        "type": "file"
+      },
+      {
+        "name": "Copy from text style reference",
+        "type": "multiple_select",
+        "options": [
+          "Font",
+          "Colours",
+          "Text effects",
+          "Layout & placement",
+          "Extras"
+        ]
+      },
+      {
+        "name": "Text style",
+        "type": "long_text"
+      },
+      {
+        "name": "Handle / series label",
+        "type": "text"
+      },
+      {
+        "name": "Research cache",
+        "type": "long_text"
+      },
+      {
+        "name": "2 · Brainstorming Summary",
+        "type": "button",
+        "action": "plan",
+        "label": "▶ Approve summary → fill plan"
+      },
+      {
+        "name": "6 · Draft Images",
+        "type": "button",
+        "action": "finalize",
+        "label": "▶ Approve draft images"
+      },
+      {
+        "name": "Editable slides",
+        "type": "file"
+      },
+      {
+        "name": "5 · Style Preview",
+        "type": "button",
+        "action": "look",
+        "label": "▶ Approve look → make the other slides"
+      },
+      {
+        "name": "Redo style preview",
+        "type": "button",
+        "action": "images",
+        "label": "↻ Redo style preview"
+      }
+    ],
+    "Slides": [
+      {
+        "name": "Name",
+        "type": "text",
+        "primary": true
+      },
+      {
+        "name": "Content",
+        "type": "link_row",
+        "links_to": "Content"
+      },
+      {
+        "name": "Slide #",
+        "type": "number"
+      },
+      {
+        "name": "Role",
+        "type": "single_select",
+        "options": [
+          "cover",
+          "body",
+          "cta"
+        ]
+      },
+      {
+        "name": "Body text",
+        "type": "long_text"
+      },
+      {
+        "name": "Image prompt",
+        "type": "long_text"
+      },
+      {
+        "name": "Image",
+        "type": "file"
+      },
+      {
+        "name": "Image URL",
+        "type": "url"
+      },
+      {
+        "name": "Redo",
+        "type": "boolean"
+      },
+      {
+        "name": "Title",
+        "type": "text"
+      }
+    ]
+  }
+}

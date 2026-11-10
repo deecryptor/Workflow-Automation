@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+credentials.json
+token.json
+live-backup-*.json
+.tmp/
+node_modules/
+.DS_Store

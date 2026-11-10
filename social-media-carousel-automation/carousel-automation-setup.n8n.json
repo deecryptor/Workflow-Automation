@@ -1,0 +1,455 @@
+{
+  "name": "Social Media Carousel Automation · Baserow setup (run once)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Social Media Carousel Automation · Baserow setup",
+        "formDescription": "Creates the \"Carousel Automation\" database (Content, Slides) in your local Baserow. Your login is only sent to your own Baserow.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Baserow email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Baserow password",
+              "fieldType": "password",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Baserow address (from n8n)",
+              "defaultValue": "http://host.docker.internal:85",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "n8n address",
+              "defaultValue": "http://localhost:5678",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6a2a2a44-ed49-4f48-8c34-beffcfbb59f8",
+      "name": "Setup Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "63fa27c4-60fc-487f-87e5-0865c91e225b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Setup Form').first().json['Baserow address (from n8n)'] + '/api/user/token-auth/' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $json['Baserow email'], username: $json['Baserow email'], password: $json['Baserow password'] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "1abac122-208c-4dd9-862e-1971a316536c",
+      "name": "Baserow: Log In",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Setup Form').first().json['Baserow address (from n8n)'] + '/api/workspaces/' }}",
+        "options": {
+          "timeout": 60000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'JWT ' + $('Baserow: Log In').first().json.access_token }}"
+            }
+          ]
+        }
+      },
+      "id": "a86e7f5b-7f40-4d80-991b-52f2356fd7d8",
+      "name": "Baserow: List Workspaces",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Setup Form').first().json['Baserow address (from n8n)'] + '/api/applications/workspace/' + ($input.first().json.id || $input.first().json[0].id) + '/' }}",
+        "options": {
+          "timeout": 60000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'JWT ' + $('Baserow: Log In').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: 'database', name: 'Carousel Automation' }) }}"
+      },
+      "id": "15349be6-6fa9-414a-b7e9-7ff544511be4",
+      "name": "Baserow: Create Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Setup Form').first().json['Baserow address (from n8n)'] + '/api/database/tables/database/' + $('Baserow: Create Database').first().json.id + '/' }}",
+        "options": {
+          "timeout": 60000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'JWT ' + $('Baserow: Log In').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'Content', data: [['Title']], first_row_header: true }) }}"
+      },
+      "id": "d45fd511-1245-490e-b687-af092ae6284b",
+      "name": "Create Table: Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Setup Form').first().json['Baserow address (from n8n)'] + '/api/database/tables/database/' + $('Baserow: Create Database').first().json.id + '/' }}",
+        "options": {
+          "timeout": 60000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'JWT ' + $('Baserow: Log In').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'Slides', data: [['Name']], first_row_header: true }) }}"
+      },
+      "id": "bea93ea8-2461-47ae-b65b-bb1a6fed7e6f",
+      "name": "Create Table: Slides",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Builds every field the Carousel Automation needs, in creation order.\nconst db = $('Baserow: Create Database').first().json;\nconst content = $('Create Table: Content').first().json.id;\nconst slides = $('Create Table: Slides').first().json.id;\nconst hook = String($('Setup Form').first().json['n8n address'] || 'http://localhost:5678').replace(/\\/+$/, '') + '/webhook/carousel-automation';\n\nconst colors = ['light-blue', 'light-green', 'light-orange', 'light-purple', 'light-red', 'light-gray', 'light-yellow', 'light-cyan', 'light-pink', 'light-brown', 'blue', 'green'];\nconst options = values => values.map((value, i) => ({ value, color: colors[i % colors.length] }));\nconst button = (action, label) => ({\n  type: 'formula',\n  formula: `button(concat('${hook}?action=${action}&row=', totext(row_id())), '${label}')`,\n});\n\nconst RESEARCH_HELP = `One item per line, each starting with a label (see docs/how-to-write-content-research.md):\nTopic: …\nAudience: …\nPost I want: …\nSuggested outline: section 1, section 2, …  (optional)\nOptional pool (not must-cover): …`;\n\nconst F = [];\nconst add = (table, name, spec) => F.push({ json: { table, name, body: { name, ...spec } } });\n\n// ---- Content: status ----\nadd(content, 'Status', {\n  type: 'single_select', select_options: options([\n    'New', 'Brainstorming…', 'Summary ready', 'Filling plan…', 'Plan ready', 'Writing text draft…', 'Draft text ready',\n    'Making draft images…', 'Style preview ready', 'Draft image ready', 'Redoing draft images…', 'Draft images redone',\n    'Finalising draft post…', 'Draft post saved', 'Needs attention',\n  ]),\n});\n// ---- step 1: gather content & design requirements → Brainstorm ----\nadd(content, 'Content Research', { type: 'long_text', description: RESEARCH_HELP });\nadd(content, 'Content Research Reference Links', { type: 'long_text', description: 'One link per line: articles, YouTube, Instagram/TikTok/X posts.' });\nadd(content, 'Content Research Reference Files', { type: 'file', description: 'PDFs, videos, images, audio or .txt transcripts.' });\nadd(content, 'Angle', { type: 'long_text', description: 'Optional. Write your own hook before Brainstorm to aim the research at it; otherwise a suggested angle is written here.' });\nadd(content, 'Style Direction', { type: 'long_text', description: 'Voice and look for the post.' });\nadd(content, '1 · Gather Content & Design Requirements', button('research', '▶ Brainstorm'));\n// ---- step 2: brainstorming summary → fill plan ----\nadd(content, 'Content Research Brief', { type: 'long_text' });\nadd(content, 'Sources', { type: 'long_text' });\nadd(content, 'Research cache', { type: 'long_text', description: 'Filled by the workflow; you can hide it. Lets Brainstorm rewrite only the summary after a failure. Clear it to force fresh research.' });\nadd(content, '2 · Brainstorming Summary', button('plan', '▶ Approve summary → fill plan'));\n// ---- step 3: post creation plan → draft text ----\nadd(content, 'Slide size', { type: 'single_select', select_options: options(['4:5 (Instagram + TikTok)', '9:16 (TikTok, Reels, Shorts)', 'Both (4:5 + 9:16)']) });\nadd(content, 'Slide count', { type: 'number', number_decimal_places: 0 });\nadd(content, 'Niche', { type: 'long_text' });\nadd(content, 'Narrative prompt', { type: 'long_text' });\nadd(content, 'Format prompt', { type: 'long_text' });\nadd(content, 'Image style', { type: 'long_text' });\nadd(content, 'Cover reference images', { type: 'file' });\nadd(content, 'Cover reference use', { type: 'single_select', select_options: options(['Match the look', 'Recreate the scene (same person)']) });\nadd(content, 'Slide reference images', { type: 'file' });\nadd(content, 'Text style reference', { type: 'file', description: 'Optional. 1-2 slides whose TEXT styling you want to copy (font, colours, effects, placement). The picture itself is not copied.' });\nadd(content, 'Copy from text style reference', { type: 'multiple_select', select_options: options(['Font', 'Colours', 'Text effects', 'Layout & placement', 'Extras']) });\nadd(content, 'Text style', { type: 'long_text' });\nadd(content, 'Handle / series label', { type: 'text', description: 'Optional. Your own handle or series name, written small on every slide. Empty = none.' });\nadd(content, 'Reference slideshow links', { type: 'long_text' });\nadd(content, '3 · Post Creation Plan', button('slides', '▶ Approve → create draft text'));\n// ---- step 4: draft text → style preview ----\nadd(content, 'Slides', { type: 'link_row', link_row_table_id: slides, has_related_field: true });\nadd(content, 'Post caption', { type: 'long_text' });\nadd(content, 'Hashtags', { type: 'long_text' });\nadd(content, '4 · Draft Text', button('images', '▶ Approve draft text → make style preview'));\n// ---- step 5: style preview → the other slides ----\nadd(content, 'Redo style preview', button('images', '↻ Redo style preview'));\nadd(content, '5 · Style Preview', button('look', '▶ Approve look → make the other slides'));\n// ---- step 6: draft images → save ----\nadd(content, 'Redo images', button('redo', '↻ Redo images'));\nadd(content, '6 · Draft Images', button('finalize', '▶ Approve draft images'));\n// ---- step 7: saved draft ----\nadd(content, '7 · Saved Finalised Drafts', { type: 'formula', formula: \"''\" }); // section heading only\nadd(content, 'Editable slides', { type: 'file', description: 'The .pptx with editable text over the slide art.' });\nadd(content, 'Drive folder', { type: 'url' });\nadd(content, 'Posting log', { type: 'long_text' });\nadd(content, 'n8n run', { type: 'text' });\n\n// ---- Slides ---- (\"Content\" link is created automatically by the Slides link above)\nadd(slides, 'Slide #', { type: 'number', number_decimal_places: 0 });\nadd(slides, 'Role', { type: 'single_select', select_options: options(['cover', 'body', 'cta']) });\nadd(slides, 'Title', { type: 'text' });\nadd(slides, 'Body text', { type: 'long_text' });\nadd(slides, 'Image prompt', { type: 'long_text' });\nadd(slides, 'Image', { type: 'file' });\nadd(slides, 'Image URL', { type: 'url' });\nadd(slides, 'Redo', { type: 'boolean', description: 'Tick, then press ↻ Redo images on the Content row.' });\n\nreturn F.map(f => ({ json: { ...f.json, databaseId: db.id, tables: { content, slides } } }));"
+      },
+      "id": "30fb013a-42b1-4eb8-8caf-7d9c7eb46351",
+      "name": "Field Specs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Setup Form').first().json['Baserow address (from n8n)'] + '/api/database/fields/table/' + $json.table + '/' }}",
+        "options": {
+          "timeout": 60000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 400
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'JWT ' + $('Baserow: Log In').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "id": "e74782a8-3d10-4033-bac0-d592df67f434",
+      "name": "Baserow: Create Field",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// An example Content row, so the table isn't empty.\nconst tables = $('Field Specs').first().json.tables;\nconst content = {\n  Title: 'What is insulin resistance? (example)',\n  'Content Research': [\n    'Topic: Insulin resistance',\n    \"Audience: Working adults 25–55 who think they're healthy because their check-ups are normal. No medical background.\",\n    'Post I want: An informative post on what insulin resistance is, why it matters and how to reverse it.',\n    'Suggested outline: Role of insulin, What is insulin resistance, Health conditions it leads to, Signs and symptoms, How to reverse it, Call-to-action to save and share',\n  ].join('\\n'),\n  'Style Direction': 'Calm, trustworthy health explainer for adults with no medical background. Clean editorial look, warm neutrals with one teal accent, bold readable sans-serif text.',\n};\nreturn [{ json: { table: tables.content, body: content } }];"
+      },
+      "id": "d5f3dd1b-9802-4688-a571-90bd218955f1",
+      "name": "Seed Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Setup Form').first().json['Baserow address (from n8n)'] + '/api/database/rows/table/' + $json.table + '/?user_field_names=true' }}",
+        "options": {
+          "timeout": 60000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 400
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'JWT ' + $('Baserow: Log In').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "id": "1e7c3b44-43b6-4476-948c-f166bcd7d658",
+      "name": "Baserow: Create Sample Rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collects table IDs and select-option IDs for the Carousel Automation's Config node.\nconst spec = $('Field Specs').all().map(i => i.json);\nconst created = $('Baserow: Create Field').all().map(i => i.json);\nconst failed = created.map((c, i) => (c && c.id ? null : `${spec[i].name}: ${JSON.stringify(c).slice(0, 200)}`)).filter(Boolean);\n\nconst selectOptions = {};\ncreated.forEach(c => {\n  if (c && Array.isArray(c.select_options) && c.select_options.length) {\n    selectOptions[c.name] = Object.fromEntries(c.select_options.map(o => [o.value, o.id]));\n  }\n});\nconst tables = spec[0].tables;\nconst result = {\n  databaseId: spec[0].databaseId,\n  contentTableId: tables.content,\n  slidesTableId: tables.slides,\n  selectOptions: JSON.stringify(selectOptions),\n  fieldsCreated: created.length - failed.length,\n  fieldErrors: failed,\n};\nconst ok = !failed.length;\nreturn [{\n  json: {\n    ...result,\n    completionTitle: ok ? '✅ Carousel Automation tables are ready' : '⚠️ Tables created with some errors',\n    completionMessage: [\n      `Database \"Carousel Automation\" created with tables Content (${tables.content}) and Slides (${tables.slides}).`,\n      ok ? `All ${result.fieldsCreated} fields were added, plus an example Content row.` : `Problems: ${failed.join(' | ')}`,\n      'Next: 1) in Baserow open Settings → Database tokens and create a token for this database; 2) in the main workflow, open the Config node and paste contentTableId, slidesTableId and selectOptions from this run\\'s Summary node.',\n    ].join('\\n\\n'),\n  },\n}];"
+      },
+      "id": "6277bec9-5ce2-4725-bae8-ea19b339eb96",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "={{ $json.completionTitle }}",
+        "completionMessage": "={{ $json.completionMessage }}",
+        "options": {}
+      },
+      "id": "09eb6a95-0414-4f80-ba29-2b9cd1b57682",
+      "name": "Done Page",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        0
+      ],
+      "webhookId": "b0eebd90-961b-43f2-b57e-d1f0b415fe68"
+    },
+    {
+      "parameters": {
+        "content": "## Run once\nOpen the form (Execute workflow), enter your Baserow login. Creates the Carousel Automation database with all fields and buttons, then shows the table IDs.\nAfterwards you can delete this execution under Executions (it contains your password).",
+        "width": 700,
+        "height": 240,
+        "color": 4
+      },
+      "id": "490ee827-0b19-449f-85e1-6f21f51e627a",
+      "name": "Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -300
+      ]
+    }
+  ],
+  "connections": {
+    "Setup Form": {
+      "main": [
+        [
+          {
+            "node": "Baserow: Log In",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baserow: Log In": {
+      "main": [
+        [
+          {
+            "node": "Baserow: List Workspaces",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baserow: List Workspaces": {
+      "main": [
+        [
+          {
+            "node": "Baserow: Create Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baserow: Create Database": {
+      "main": [
+        [
+          {
+            "node": "Create Table: Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Table: Content": {
+      "main": [
+        [
+          {
+            "node": "Create Table: Slides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Table: Slides": {
+      "main": [
+        [
+          {
+            "node": "Field Specs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Field Specs": {
+      "main": [
+        [
+          {
+            "node": "Baserow: Create Field",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baserow: Create Field": {
+      "main": [
+        [
+          {
+            "node": "Seed Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seed Rows": {
+      "main": [
+        [
+          {
+            "node": "Baserow: Create Sample Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baserow: Create Sample Rows": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Done Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "meta": {},
+  "tags": []
+}
